@@ -62,7 +62,7 @@ When reporting an issue, please include:
 The app is a single self-contained HTML file. Download `index.html` and open it in any browser.
 
 ### Option B — Run locally without CDN/update something in TS
-\```bash
+```
 # 1. Clone the repository
 git clone https://github.com/your-username/zareadme.git
 cd zareadme
@@ -72,14 +72,14 @@ npm install
 
 # 3. Start the dev server
 npm run dev
-\```
+```
 
 Then open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### Build for production
-\```bash
+```
 npm run build
-\```
+```
 Output is in the `dist/` folder.
 
 ---

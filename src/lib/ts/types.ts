@@ -10,11 +10,20 @@ export type ComponentType =
   | 'badge'
   | 'table';
 
+export interface ColData {
+  width: number;
+  components: READMEComponent[];
+}
+
+export interface RowMetadata {
+  cols: ColData[];
+}
+
 export interface READMEComponent {
   id: string;
   type: ComponentType;
   content: string;
-  metadata?: any;
+  metadata?: RowMetadata;
 }
 
 export const COMPONENT_DEFS: Record<ComponentType, { label: string; icon: string; defaultContent: string }> = {

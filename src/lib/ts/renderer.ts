@@ -1,4 +1,5 @@
 import { marked } from 'marked';
+import type { Tokens } from 'marked';
 import { gfmHeadingId } from 'marked-gfm-heading-id';
 import { markedSmartypants } from 'marked-smartypants';
 import mermaid from 'mermaid';
@@ -9,22 +10,17 @@ import { READMEComponent } from './types';
 marked.use(gfmHeadingId());
 marked.use(markedSmartypants());
 
-// Custom renderer for math and mermaid
-const renderer = new marked.Renderer();
-
 export async function renderMarkdown(components: READMEComponent[]): Promise<string> {
   const rawMarkdown = components.map(c => c.content).join('\n\n');
-  
-  // First pass: render markdown to HTML
+
   let html = await marked.parse(rawMarkdown);
 
   // Post-processing for Math (KaTeX)
-  // We look for $$ ... $$ and $ ... $
   html = html.replace(/\$\$(.*?)\$\$/gs, (_, tex) => {
     try {
       return katex.renderToString(tex, { displayMode: true, throwOnError: false });
     } catch (e) {
-      return `<span class="text-red-500">Math Error: ${e}</span>`;
+      return `<span class="text-red-500 text-xs">Math Error: ${e instanceof Error ? e.message : String(e)}</span>`;
     }
   });
 
@@ -32,7 +28,7 @@ export async function renderMarkdown(components: READMEComponent[]): Promise<str
     try {
       return katex.renderToString(tex, { displayMode: false, throwOnError: false });
     } catch (e) {
-      return `<span class="text-red-500">Math Error: ${e}</span>`;
+      return `<span class="text-red-500 text-xs">Math Error: ${e instanceof Error ? e.message : String(e)}</span>`;
     }
   });
 
@@ -48,11 +44,11 @@ export async function renderMermaid() {
 // Extension for Mermaid in Marked
 marked.use({
   renderer: {
-    code({ text, lang }: any) {
-      if (lang === 'mermaid') {
-        return `<div class="mermaid">${text}</div>`;
+    code(token: Tokens.Code) {
+      if (token.lang === 'mermaid') {
+        return `<div class="mermaid">${token.text}</div>`;
       }
-      return false; // use default
+      return false;
     }
   }
 });

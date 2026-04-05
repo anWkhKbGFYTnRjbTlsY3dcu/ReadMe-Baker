@@ -18,9 +18,76 @@ Check [project wiki](../../wiki) for more details! Or scroll.
 
 ---
 
+## 🤝 Contributing
+
+We welcome contributions to this project. Please follow these steps to contribute:
+
+1. **Fork the repository.**
+2. **Create a new branch** (`git checkout -b feature/your-feature-name`).
+3. **Make your changes** and commit them (`git commit -m 'Add some feature'`).
+4. **Push to the branch** (`git push origin feature/your-feature-name`).
+5. **Open a pull request**.
+
+Please make sure to update tests as appropriate.
+
+## 🐛 Issues
+
+If you encounter any issues while using or setting up the project, please check the [Issues]() section to see if it has already been reported. If not, feel free to open a new issue detailing the problem.
+
+When reporting an issue, please include:
+
+- A clear and descriptive title.
+- A detailed description of the problem.
+- Steps to reproduce the issue.
+- Any relevant logs or screenshots.
+- The environment in which the issue occurs (OS, browser, Node.js version, etc.).
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+| :--- | :--- |
+| Core | Vanilla JavaScript, HTML5 |
+| Styling | Tailwind CSS + Typography plugin |
+| Icons | Lucide Icons |
+| Markdown | Marked.js + GFM Heading IDs |
+| Diagrams | Mermaid.js (Flowchart, Sequence, Class, State, ER, Journey) |
+| Math | KaTeX |
+| Drag & Drop | SortableJS |
+| Export | JSZip |
+| Build (dev) | Vite + TypeScript |
+
+## 📦 Installation
+
+### Option A — Just open it (no install needed)
+The app is a single self-contained HTML file. Download `index.html` and open it in any browser.
+
+### Option B — Run locally without CDN/update something in TS
+\```bash
+# 1. Clone the repository
+git clone https://github.com/your-username/zareadme.git
+cd zareadme
+
+# 2. Install dependencies
+npm install
+
+# 3. Start the dev server
+npm run dev
+\```
+
+Then open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Build for production
+\```bash
+npm run build
+\```
+Output is in the `dist/` folder.
+
+---
+
 # Features and Examples
 
 - [Features and Examples](#features-and-examples)
+  - [Import/Export from Readme](#import-export-from-readme)
   - [Table](#table)
   - [Math](#math)
   - [Badges](#badges)
@@ -30,10 +97,12 @@ Check [project wiki](../../wiki) for more details! Or scroll.
   - [Diagrams: Sequence](#diagrams-sequence)
   - [Diagrams: Class (OOP)](#diagrams-class-oop-)
   - [Diagrams: State Diagram](#diagrams-state-diagram)
-  - [Diagrams: Steps](#diagrams-steps)
+  - [Diagrams: Entity relationship](#diagrams-steps)
   - [User Journey](#user-journey)
-  - [Import/Export from Readme](#import-export-from-readme)
   - [Code blocks, paragrapsh, bullet list, images, link](#code-blocks-paragrapsh-bullet-list-images-link)
+
+## Import/Export from Readme
+![App Banner](src/lib/img/import.gif)
 
 ## Table
 
@@ -147,9 +216,6 @@ journey
     Go downstairs: 5: Me
     Sit down: 5: Me
 ```
-
-## Import/Export from Readme
-![App Banner](src/lib/img/import.gif)
 
 ## Code blocks, paragrapsh, bullet list, images, link
 

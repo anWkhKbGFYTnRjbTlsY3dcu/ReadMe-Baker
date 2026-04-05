@@ -108,8 +108,8 @@
     <div id="app" class="flex h-screen w-full">
       
       <!-- Left Sidebar: Components -->
-      <aside class="w-72 bg-white border-r border-slate-200 flex flex-col shadow-sm z-20">
-        <div class="p-6 border-b border-slate-200">
+      <aside class="w-72 bg-white border-r border-slate-200 flex flex-col shadow-sm z-20 h-full overflow-hidden">
+        <div class="p-6 shrink-0 border-b border-slate-200">
           <h1 class="text-xl font-bold flex items-center gap-2">
             <i data-lucide="layout" class="text-blue-600 w-5 h-5"></i>
             ZaReadme <span class="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded ml-1">v1.0</span>
@@ -117,7 +117,7 @@
           <p class="text-xs text-slate-500 mt-1">Drag & drop to build your Readme(s)</p>
         </div>
         
-        <div class="p-4 border-b border-slate-100 bg-slate-50/50">
+        <div class="p-4 shrink-0 border-b border-slate-100 bg-slate-50/50">
           <h3 class="text-[10px] font-bold uppercase text-slate-400 mb-3 tracking-wider">Layout & Structure</h3>
           <div id="layout-list" class="space-y-2">
             <!-- Layout components -->
@@ -142,8 +142,8 @@
       </aside>
 
       <!-- Center: Editor Canvas -->
-      <main class="flex-1 flex flex-col min-w-0 bg-slate-100/50">
-        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-10 shadow-sm">
+      <main class="flex-1 flex flex-col min-w-0 bg-slate-100/50 h-full overflow-hidden">
+        <header class="h-16 shrink-0 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-10 shadow-sm">
           <div class="flex items-center gap-6">
             <div class="flex items-center gap-2">
               <button id="btn-new-project" class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium hover:bg-slate-100 rounded-lg transition-colors text-slate-600">
@@ -192,8 +192,8 @@
       </main>
 
       <!-- Right: Preview -->
-      <aside class="w-[40%] bg-white border-l border-slate-200 flex flex-col shadow-lg z-20">
-        <div class="p-4 border-b border-slate-200 flex flex-col gap-3 bg-slate-50/50">
+      <aside class="w-[40%] bg-white border-l border-slate-200 flex flex-col shadow-lg z-20 h-full overflow-hidden">
+        <div class="p-4 shrink-0 border-b border-slate-200 flex flex-col gap-3 bg-slate-50/50">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <i data-lucide="eye" class="w-4 h-4 text-blue-600"></i>
@@ -342,6 +342,7 @@
         code: { label: 'Code Block', icon: 'code', default: '```javascript\nconsole.log("Hello World");\n```' },
         list: { label: 'Bullet List', icon: 'list', default: '- Item 1\n- Item 2\n- Item 3' },
         image: { label: 'Image', icon: 'image', default: '![Alt Text](https://picsum.photos/seed/readme/800/400)' },
+        video: { label: 'Video / GIF', icon: 'play-circle', default: '<div align="center">\n\n<video src="your-video-url.mp4" width="100%" controls></video>\n\n</div>' },
         link: { label: 'Link', icon: 'link', default: '[Visit Website](https://example.com)' },
         math: { label: 'KaTeX Math', icon: 'sigma', default: '$$ e = mc^2 $$' },
         mermaid_flow: { label: 'Flowchart', icon: 'git-branch', default: '```mermaid\ngraph TD\n  A[Start] --> B{Is it working?}\n  B -- Yes --> C[Great!]\n  B -- No --> D[Debug]\n```' },
@@ -613,6 +614,7 @@
 
         if (comp.type === 'badge') editorHtml = getBadgeEditor(comp);
         else if (comp.type === 'table') editorHtml = getTableEditor(comp);
+        else if (comp.type === 'video') editorHtml = getVideoEditor(comp);
         else if (comp.type === 'row') editorHtml = getRowEditor(comp);
         else if (comp.type === 'toc') editorHtml = '<div class="p-4 bg-slate-50 rounded-lg border border-dashed border-slate-300 text-center text-xs text-slate-400">Table of Contents (Auto-generated)</div>';
         else if (comp.type === 'heading') editorHtml = getHeadingEditor(comp);
@@ -676,6 +678,7 @@
 
         if (comp.type === 'badge') setupBadgeListeners(el, comp);
         if (comp.type === 'table') setupTableListeners(el, comp);
+        if (comp.type === 'video') setupVideoListeners(el, comp);
         if (comp.type === 'row') setupRowListeners(el, comp);
         if (comp.type === 'heading') setupHeadingListeners(el, comp);
 
@@ -1196,11 +1199,15 @@
 
       function getTableEditor(comp) {
         const rows = comp.content.trim().split('\n');
-        const dataRows = rows.filter(r => r.trim() && !r.includes('---') && !r.includes('---'));
+        const dataRows = rows.filter(r => r.trim() && !r.includes('---'));
         
         // Simple parser for markdown table
-        const parseRow = (row) => row.split('|').filter((_, i, a) => i > 0 && i < a.length - 1).map(c => c.trim());
-        const tableData = dataRows.map(parseRow);
+        const parseRow = (row) => {
+          const parts = row.split('|');
+          if (parts.length < 3) return [];
+          return parts.slice(1, -1).map(c => c.trim());
+        };
+        const tableData = dataRows.map(parseRow).filter(r => r.length > 0);
         
         if (tableData.length === 0) return `<textarea class="w-full min-h-[80px] p-3 text-sm font-mono bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-y transition-all">${comp.content}</textarea>`;
 
@@ -1221,13 +1228,53 @@
         return `
           <div class="space-y-2">
             <div class="overflow-x-auto">${tableHtml}</div>
-            <div class="flex gap-2">
-              <button class="btn-add-row text-[10px] px-2 py-1 bg-slate-100 rounded hover:bg-slate-200">+ Row</button>
-              <button class="btn-add-col-table text-[10px] px-2 py-1 bg-slate-100 rounded hover:bg-slate-200">+ Column</button>
-              <button class="btn-del-col-table text-[10px] px-2 py-1 bg-slate-100 rounded hover:bg-red-50 hover:text-red-500">- Column</button>
+            <div class="flex flex-wrap gap-2">
+              <button class="btn-add-row text-[10px] px-2 py-1 bg-slate-100 rounded hover:bg-slate-200 transition-colors flex items-center gap-1"><i data-lucide="plus" class="w-3 h-3"></i> Row</button>
+              <button class="btn-del-row text-[10px] px-2 py-1 bg-slate-100 rounded hover:bg-red-50 hover:text-red-500 transition-colors flex items-center gap-1"><i data-lucide="minus" class="w-3 h-3"></i> Row</button>
+              <div class="w-px h-4 bg-slate-200 mx-1"></div>
+              <button class="btn-add-col-table text-[10px] px-2 py-1 bg-slate-100 rounded hover:bg-slate-200 transition-colors flex items-center gap-1"><i data-lucide="plus" class="w-3 h-3"></i> Column</button>
+              <button class="btn-del-col-table text-[10px] px-2 py-1 bg-slate-100 rounded hover:bg-red-50 hover:text-red-500 transition-colors flex items-center gap-1"><i data-lucide="minus" class="w-3 h-3"></i> Column</button>
             </div>
           </div>
         `;
+      }
+
+      function getVideoEditor(comp) {
+        const srcMatch = comp.content.match(/src="([^"]+)"/);
+        const widthMatch = comp.content.match(/width="([^"]+)"/);
+        const src = srcMatch ? srcMatch[1] : '';
+        const width = widthMatch ? widthMatch[1] : '100%';
+
+        return `
+          <div class="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <div class="grid grid-cols-1 gap-3">
+              <div>
+                <label class="text-[10px] uppercase font-bold text-slate-400">Source URL (MP4 or GIF)</label>
+                <input type="text" class="video-src w-full p-2 text-sm bg-white border border-slate-200 rounded" value="${src}" placeholder="e.g. src/img/demo.gif">
+              </div>
+              <div>
+                <label class="text-[10px] uppercase font-bold text-slate-400">Width (%)</label>
+                <input type="text" class="video-width w-full p-2 text-sm bg-white border border-slate-200 rounded" value="${width.replace('%', '')}" placeholder="100">
+              </div>
+            </div>
+            <p class="text-[9px] text-slate-400 italic">Note: Relative paths like "src/img/demo.gif" only work after uploading to GitHub.</p>
+          </div>
+        `;
+      }
+
+      function setupVideoListeners(el, comp) {
+        const srcInput = el.querySelector('.video-src');
+        const widthInput = el.querySelector('.video-width');
+
+        const updateVideo = () => {
+          const src = srcInput.value;
+          const width = widthInput.value || '100';
+          comp.content = `<div align="center">\n\n<video src="${src}" width="${width}%" controls></video>\n\n</div>`;
+          updatePreview();
+        };
+
+        srcInput.oninput = updateVideo;
+        widthInput.oninput = updateVideo;
       }
 
       function setupTableListeners(el, comp) {
@@ -1235,8 +1282,11 @@
         
         const updateTable = () => {
           const rows = [];
-          const rowCount = el.querySelectorAll('tr').length;
-          const colCount = el.querySelectorAll('tr:first-child td').length;
+          const trs = el.querySelectorAll('tr');
+          const rowCount = trs.length;
+          if (rowCount === 0) return;
+          
+          const colCount = trs[0].querySelectorAll('td').length;
 
           for (let r = 0; r < rowCount; r++) {
             const row = [];
@@ -1256,9 +1306,31 @@
         inputs.forEach(input => input.oninput = updateTable);
 
         el.querySelector('.btn-add-row').onclick = () => {
-          const colCount = el.querySelectorAll('tr:first-child td').length;
-          comp.content += `\n| ${Array(colCount).fill('New').join(' | ')} |`;
+          const trs = el.querySelectorAll('tr');
+          const colCount = trs.length > 0 ? trs[0].querySelectorAll('td').length : 2;
+          const newRow = `| ${Array(colCount).fill('New').join(' | ')} |`;
+          comp.content = comp.content.trim() + `\n${newRow}`;
           render();
+        };
+
+        el.querySelector('.btn-del-row').onclick = () => {
+          const rows = comp.content.trim().split('\n');
+          const dataRows = rows.filter(r => r.trim() && !r.includes('---'));
+          if (dataRows.length > 1) {
+            // Find last data row and remove it
+            let lastIdx = -1;
+            for (let i = rows.length - 1; i >= 0; i--) {
+              if (rows[i].trim() && !rows[i].includes('---')) {
+                lastIdx = i;
+                break;
+              }
+            }
+            if (lastIdx !== -1) {
+              rows.splice(lastIdx, 1);
+              comp.content = rows.join('\n');
+              render();
+            }
+          }
         };
 
         el.querySelector('.btn-add-col-table').onclick = () => {
@@ -1266,7 +1338,12 @@
           const newRows = rows.map(r => {
             if (r.trim() === '') return r;
             const parts = r.split('|');
-            parts.splice(parts.length - 1, 0, ' New ');
+            if (parts.length < 3) return r;
+            
+            const isSeparator = r.includes('---');
+            const newValue = isSeparator ? ' --- ' : ' New ';
+            
+            parts.splice(parts.length - 1, 0, newValue);
             return parts.join('|');
           });
           comp.content = newRows.join('\n');

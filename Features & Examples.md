@@ -24,7 +24,7 @@
 ## Math
 
 $$ e = mc^2 $$
-$$ \gdef\foo#1{#1^2} \foo{y} + \foo{y} $$
+$$ y^2 + y^2 = 2y^2 $$
 
 ## Badges
 
@@ -129,6 +129,7 @@ journey
 ```
 
 ## Import/Export from Readme
+![App Banner](src/lib/img/import.gif)
 
 ## Code blocks, paragrapsh, bullet list, images, link
 

@@ -1,0 +1,1465 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ZaReadme - Drag & drop to build your Readme(s)</title>
+    
+    <!-- Libraries via CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+    
+    <style>
+      body { font-family: 'Inter', sans-serif; }
+      .font-mono { font-family: 'JetBrains Mono', monospace; }
+      
+      /* GitHub Themes */
+      .github-light {
+        background-color: #ffffff !important;
+        color: #1f2328 !important;
+      }
+      .github-dark {
+        background-color: #0d1117 !important;
+        color: #e6edf3 !important;
+      }
+      .github-dark .prose { color: #e6edf3 !important; }
+      .github-dark .prose h1, .github-dark .prose h2, .github-dark .prose h3 { color: #f0f6fc !important; }
+      .github-dark .prose a { color: #2f81f7 !important; }
+      .github-dark .prose code { background-color: #6e768166 !important; color: #e6edf3 !important; }
+      .github-dark .prose pre { background-color: #161b22 !important; border: 1px solid #30363d !important; }
+      .github-dark .prose blockquote { border-left-color: #30363d !important; color: #8b949e !important; }
+      .github-dark .prose table { border-color: #30363d !important; }
+      .github-dark .prose th, .github-dark .prose td { border-color: #30363d !important; }
+
+      /* Mermaid styling fixes */
+      .mermaid svg { max-width: 100% !important; height: auto !important; }
+      
+      /* Custom scrollbar */
+      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { 
+        background: #cbd5e1; 
+        border-radius: 9999px; 
+      }
+      .dark ::-webkit-scrollbar-thumb { background: #334155; }
+      
+      .drag-handle { cursor: grab; }
+      .drag-handle:active { cursor: grabbing; }
+
+      .canvas-drop-zone {
+        min-height: 50px;
+        transition: all 0.2s;
+      }
+      .canvas-drop-zone:empty::after {
+        content: 'Drop elements here';
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 50px;
+        font-size: 10px;
+        color: #94a3b8;
+        border: 1px dashed #e2e8f0;
+        border-radius: 8px;
+      }
+
+      .row-container {
+        display: flex;
+        gap: 1rem;
+        width: 100%;
+      }
+      .col-container {
+        flex: 1;
+        min-width: 0;
+        position: relative;
+      }
+      .no-wrap-textarea {
+        white-space: pre !important;
+        overflow-x: auto !important;
+        word-wrap: normal !important;
+      }
+
+      /* Preview badge row fix */
+      #preview-container img {
+        display: inline-block !important;
+        margin: 0 4px !important;
+        vertical-align: middle !important;
+      }
+      #preview-container p {
+        margin-top: 1.25em !important;
+        margin-bottom: 1.25em !important;
+      }
+      #preview-container div[align="center"] {
+        text-align: center !important;
+      }
+      #preview-container div[align="center"] img {
+        margin: 0 4px !important;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 text-slate-900 overflow-hidden transition-colors duration-300">
+    <div id="app" class="flex h-screen w-full">
+      
+      <!-- Left Sidebar: Components -->
+      <aside class="w-72 bg-white border-r border-slate-200 flex flex-col shadow-sm z-20">
+        <div class="p-6 border-b border-slate-200">
+          <h1 class="text-xl font-bold flex items-center gap-2">
+            <i data-lucide="layout" class="text-blue-600 w-5 h-5"></i>
+            ZaReadme <span class="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded ml-1">v1.0</span>
+          </h1>
+          <p class="text-xs text-slate-500 mt-1">Drag & drop to build your Readme(s)</p>
+        </div>
+        
+        <div class="p-4 border-b border-slate-100 bg-slate-50/50">
+          <h3 class="text-[10px] font-bold uppercase text-slate-400 mb-3 tracking-wider">Layout & Structure</h3>
+          <div id="layout-list" class="space-y-2">
+            <!-- Layout components -->
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 space-y-4">
+          <div>
+            <h3 class="text-[10px] font-bold uppercase text-slate-400 mb-3 tracking-wider">Content Elements</h3>
+            <div id="sidebar-list" class="space-y-2">
+              <!-- Content components -->
+            </div>
+          </div>
+
+          <div>
+            <h3 class="text-[10px] font-bold uppercase text-slate-400 mb-3 tracking-wider">Diagrams (Mermaid)</h3>
+            <div id="diagram-list" class="space-y-2">
+              <!-- Diagram components -->
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center: Editor Canvas -->
+      <main class="flex-1 flex flex-col min-w-0 bg-slate-100/50">
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-10 shadow-sm">
+          <div class="flex items-center gap-6">
+            <div class="flex items-center gap-2">
+              <button id="btn-new-project" class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium hover:bg-slate-100 rounded-lg transition-colors text-slate-600">
+                <i data-lucide="file-plus" class="w-4 h-4"></i>
+                New
+              </button>
+              <button id="btn-import" class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium hover:bg-slate-100 rounded-lg transition-colors text-slate-600">
+                <i data-lucide="upload" class="w-4 h-4"></i>
+                Import
+              </button>
+            </div>
+            <div class="h-6 w-px bg-slate-200"></div>
+            <div id="tabs-container" class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+              <!-- Tabs will be injected here -->
+              <button id="btn-add-tab" class="p-1.5 hover:bg-white rounded-md text-slate-500 transition-all">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex items-center bg-slate-100 rounded-lg p-1">
+              <button id="theme-light" class="p-1.5 rounded-md bg-white shadow-sm text-blue-600 transition-all">
+                <i data-lucide="sun" class="w-4 h-4"></i>
+              </button>
+              <button id="theme-dark" class="p-1.5 rounded-md text-slate-500 hover:text-slate-700 transition-all">
+                <i data-lucide="moon" class="w-4 h-4"></i>
+              </button>
+            </div>
+            <div class="h-6 w-px bg-slate-200 mx-1"></div>
+            <button id="btn-copy" class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium hover:bg-slate-100 rounded-lg transition-colors">
+              <i data-lucide="copy" class="w-4 h-4"></i>
+              Copy
+            </button>
+            <button id="btn-download" class="flex items-center gap-2 px-4 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm">
+              <i data-lucide="download" class="w-4 h-4"></i>
+              Download
+            </button>
+          </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-8">
+          <div id="editor-canvas" class="max-w-4xl mx-auto min-h-[700px] rounded-2xl border-2 border-dashed border-slate-300 bg-white/80 p-6 space-y-6 shadow-inner">
+            <!-- Dropped components appear here -->
+          </div>
+        </div>
+      </main>
+
+      <!-- Right: Preview -->
+      <aside class="w-[40%] bg-white border-l border-slate-200 flex flex-col shadow-lg z-20">
+        <div class="p-4 border-b border-slate-200 flex flex-col gap-3 bg-slate-50/50">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="eye" class="w-4 h-4 text-blue-600"></i>
+              <h2 class="font-semibold text-sm">GitHub Live Preview</h2>
+            </div>
+          </div>
+          <div id="preview-tabs-container" class="flex items-center gap-1 bg-slate-200 p-1 rounded">
+            <!-- Preview tabs will be injected here -->
+          </div>
+        </div>
+        <div id="preview-outer" class="flex-1 overflow-y-auto bg-white transition-colors duration-300">
+          <div id="preview-container" class="p-10 prose prose-slate max-w-none">
+            <!-- Rendered markdown -->
+          </div>
+        </div>
+      </aside>
+
+    </div>
+
+    <!-- Template Modal -->
+    <div id="template-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+      <div class="bg-white w-[600px] rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+        <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <h2 class="text-lg font-bold flex items-center gap-2">
+            <i data-lucide="layout-template" class="text-blue-600 w-5 h-5"></i>
+            Choose a Template
+          </h2>
+          <button id="close-template-modal" class="p-2 hover:bg-slate-200 rounded-full transition-all text-slate-400">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+        
+        <div class="p-6 grid grid-cols-1 gap-4">
+          <button class="template-option group flex items-start gap-4 p-4 border border-slate-200 rounded-2xl hover:border-blue-500 hover:bg-blue-50 transition-all text-left" data-template="new">
+            <div class="p-3 bg-slate-100 rounded-xl group-hover:bg-blue-100 transition-colors">
+              <i data-lucide="file" class="w-6 h-6 text-slate-600 group-hover:text-blue-600"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-slate-900">New Project</h4>
+              <p class="text-xs text-slate-500">Start fresh with just README.md and LICENSE.md</p>
+            </div>
+          </button>
+
+          <button class="template-option group flex items-start gap-4 p-4 border border-slate-200 rounded-2xl hover:border-blue-500 hover:bg-blue-50 transition-all text-left" data-template="preset1">
+            <div class="p-3 bg-slate-100 rounded-xl group-hover:bg-blue-100 transition-colors">
+              <i data-lucide="sparkles" class="w-6 h-6 text-slate-600 group-hover:text-blue-600"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-slate-900">Professional Intro</h4>
+              <p class="text-xs text-slate-500">Preloaded structure with intro, features, and screenshots</p>
+            </div>
+          </button>
+
+          <button class="template-option group flex items-start gap-4 p-4 border border-slate-200 rounded-2xl hover:border-blue-500 hover:bg-blue-50 transition-all text-left" data-template="preset2">
+            <div class="p-3 bg-slate-100 rounded-xl group-hover:bg-blue-100 transition-colors">
+              <i data-lucide="layers" class="w-6 h-6 text-slate-600 group-hover:text-blue-600"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-slate-900">Full Structure</h4>
+              <p class="text-xs text-slate-500">Empty tabs for Welcome, How To, Examples, Versioning, etc.</p>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <input type="file" id="import-file" class="hidden" accept=".md">
+
+    <!-- Badge Search Modal -->
+    <div id="badge-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[80vh]">
+        <div class="p-6 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-lg font-bold">Shields.io Badge Explorer</h3>
+          <button id="close-badge-modal" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+        
+        <div class="px-6 py-2 bg-slate-50 border-b border-slate-200 flex gap-4">
+          <button id="tab-badge-search" class="py-2 text-sm font-bold border-b-2 border-blue-600 text-blue-600 transition-all">Search</button>
+          <button id="tab-badge-dynamic" class="py-2 text-sm font-bold text-slate-400 hover:text-slate-600 transition-all">Dynamic JSON</button>
+        </div>
+
+        <div id="badge-search-section" class="flex flex-col flex-1 overflow-hidden">
+          <div class="p-4 bg-slate-50 border-b border-slate-200">
+            <div class="relative">
+              <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+              <input type="text" id="badge-search" placeholder="Search badges (e.g. build, license, version)..." class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+            </div>
+          </div>
+          <div id="badge-results" class="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-4">
+            <!-- Badge results -->
+          </div>
+        </div>
+
+        <div id="badge-dynamic-section" class="hidden flex-1 overflow-y-auto p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Custom Badge Configuration</span>
+            <a href="https://shields.io/badges/dynamic-json-badge" target="_blank" rel="noopener noreferrer" class="text-[10px] font-bold uppercase text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors">
+              <i data-lucide="external-link" class="w-3 h-3"></i>
+              Examples
+            </a>
+          </div>
+
+          <div class="p-4 bg-blue-50 border border-blue-100 rounded-xl flex gap-3">
+            <i data-lucide="info" class="w-5 h-5 text-blue-500 shrink-0"></i>
+            <p class="text-xs text-blue-700 leading-relaxed">
+              Dynamic badges pull data from a JSON endpoint using JSONPath. 
+              Example: Use <code>https://api.github.com/repos/badges/shields/releases/latest</code> 
+              with query <code>$.name</code>.
+            </p>
+          </div>
+
+          <div class="space-y-4">
+            <div class="space-y-1">
+              <label class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">JSON Data URL</label>
+              <input type="text" id="dynamic-badge-url" placeholder="https://api.example.com/data.json" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+            </div>
+            <div class="space-y-1">
+              <label class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">JSONPath Query</label>
+              <input type="text" id="dynamic-badge-query" placeholder="$.version" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-1">
+                <label class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Label</label>
+                <input type="text" id="dynamic-badge-label" placeholder="version" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+              </div>
+              <div class="space-y-1">
+                <label class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Color</label>
+                <input type="text" id="dynamic-badge-color" placeholder="blue" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+              </div>
+            </div>
+            <button id="btn-create-dynamic" class="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all">
+              Create Dynamic Badge
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // --- Configuration & Types ---
+      const COMPONENT_DEFS = {
+        heading: { label: 'Heading', icon: 'type', default: '# Project Title' },
+        paragraph: { label: 'Paragraph', icon: 'align-left', default: 'A brief description of your project.' },
+        code: { label: 'Code Block', icon: 'code', default: '```javascript\nconsole.log("Hello World");\n```' },
+        list: { label: 'Bullet List', icon: 'list', default: '- Item 1\n- Item 2\n- Item 3' },
+        image: { label: 'Image', icon: 'image', default: '![Alt Text](https://picsum.photos/seed/readme/800/400)' },
+        link: { label: 'Link', icon: 'link', default: '[Visit Website](https://example.com)' },
+        math: { label: 'KaTeX Math', icon: 'sigma', default: '$$ e = mc^2 $$' },
+        mermaid_flow: { label: 'Flowchart', icon: 'git-branch', default: '```mermaid\ngraph TD\n  A[Start] --> B{Is it working?}\n  B -- Yes --> C[Great!]\n  B -- No --> D[Debug]\n```' },
+        mermaid_seq: { label: 'Sequence Diagram', icon: 'arrow-right-left', default: '```mermaid\nsequenceDiagram\n  Alice->>John: Hello John, how are you?\n  John-->>Alice: Great!\n  Alice-)John: See you later!\n```' },
+        mermaid_class: { label: 'Class Diagram', icon: 'box', default: '```mermaid\nclassDiagram\n  Animal <|-- Duck\n  Animal <|-- Fish\n  Animal <|-- Zebra\n  Animal : +int age\n  Animal : +String gender\n  Animal: +isMammal()\n  Animal: +mate()\n  class Duck{\n    +String beakColor\n    +swim()\n    +quack()\n  }\n```' },
+        mermaid_state: { label: 'State Diagram', icon: 'activity', default: '```mermaid\nstateDiagram-v2\n  [*] --> Still\n  Still --> [*]\n  Still --> Moving\n  Moving --> Still\n  Moving --> Crash\n  Crash --> [*]\n```' },
+        mermaid_er: { label: 'ER Diagram', icon: 'database', default: '```mermaid\nerDiagram\n  CUSTOMER ||--o{ ORDER : places\n  ORDER ||--|{ LINE-ITEM : contains\n  CUSTOMER }|..|{ DELIVERY-ADDRESS : uses\n```' },
+        mermaid_journey: { label: 'User Journey', icon: 'map', default: '```mermaid\njourney\n  title My working day\n  section Go to work\n    Make tea: 5: Me\n    Go upstairs: 3: Me\n    Do work: 1: Me, Cat\n  section Go home\n    Go downstairs: 5: Me\n    Sit down: 5: Me\n```' },
+        badge: { label: 'Badge Row', icon: 'shield', default: '<div align="center">\n\n![status](https://img.shields.io/badge/status-active-success)\n\n</div>' },
+        changelog: { label: 'Changelog Entry', icon: 'history', default: '### [1.0.0] - 2023-10-27\n\n#### Added\n- New feature A\n- New feature B\n\n#### Fixed\n- Bug fix C' },
+        steps: { label: 'Roadmap Steps', icon: 'check-square', default: '<!-- ROADMAP -->\n## Roadmap\n\n- [x] Add Changelog\n- [x] Add back to top links\n- [ ] Add Additional Templates w/ Examples\n- [ ] Add "components" document to easily copy & paste sections of the readme\n- [ ] Multi-language Support\n    - [ ] Chinese\n    - [ ] Spanish' },
+      };
+
+      const LAYOUT_DEFS = {
+        row: { label: 'Row Container', icon: 'columns', default: '' },
+        table: { label: 'Table', icon: 'table', default: '| Header 1 | Header 2 |\n| -------- | -------- |\n| Cell 1   | Cell 2   |' },
+        toc: { label: 'Table of Contents', icon: 'list-ordered', default: '<!-- TOC -->' },
+      };
+
+      // Badge Database (Sample)
+      const BADGE_DB = [
+        { label: 'Build', message: 'passing', color: 'success', category: 'Continuous Integration' },
+        { label: 'Build', message: 'failing', color: 'critical', category: 'Continuous Integration' },
+        { label: 'License', message: 'MIT', color: 'blue', category: 'Metadata' },
+        { label: 'Version', message: '1.0.0', color: 'informational', category: 'Metadata' },
+        { label: 'PRs', message: 'welcome', color: 'orange', category: 'Community' },
+        { label: 'Coverage', message: '95%', color: 'brightgreen', category: 'Analysis' },
+        { label: 'Twitter', message: 'follow', color: '1da1f2', category: 'Social' },
+        { label: 'Discord', message: 'join', color: '7289da', category: 'Social' },
+      ];
+
+      let tabs = [
+        { 
+          id: 'tab-1', 
+          name: 'README.md', 
+          components: [
+            { id: 'init-1', type: 'heading', content: '# <div align="center">ZaReadme</div>' },
+            { id: 'init-2', type: 'paragraph', content: '<div align="center">\n\n![HTML5](https://img.shields.io/badge/html5-%23E34F26.svg?style=for-the-badge&logo=html5&logoColor=white) ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white) ![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E) ![Lucide](https://img.shields.io/badge/lucide-%235E6AD2.svg?style=for-the-badge&logo=lucide&logoColor=white) ![Mermaid](https://img.shields.io/badge/mermaid-%23FF69B4.svg?style=for-the-badge&logo=mermaid&logoColor=white)\n\n</div>' },
+            { id: 'init-3', type: 'image', content: '<div align="center">\n\n![ZaReadme Screenshot](https://picsum.photos/seed/zareadme-editor/1200/600)\n\n</div>' },
+            { id: 'init-4', type: 'heading', content: '## 🚀 About the Project' },
+            { id: 'init-5', type: 'paragraph', content: 'ZaReadme is a professional markdown editor designed specifically for creating high-quality GitHub documentation. Drag, drop, and export your documentation in seconds without wrestling with raw markdown syntax.' },
+            { id: 'init-6', type: 'heading', content: '## 🛠️ Tech Stack' },
+            { id: 'init-7', type: 'list', content: '- **Core**: Vanilla JavaScript, HTML5\n- **Styling**: Tailwind CSS\n- **Icons**: Lucide Icons\n- **Parsing**: Marked.js (Markdown), KaTeX (Math), Mermaid.js (Diagrams)\n- **Interactions**: SortableJS' }
+          ] 
+        },
+        { id: 'tab-2', name: 'LICENSE.md', components: [{ id: 'lic-1', type: 'heading', content: '# License' }, { id: 'lic-2', type: 'paragraph', content: 'MIT License\n\nCopyright (c) 2024 ZaReadme Team\n\nPermission is hereby granted, free of charge, to any person obtaining a copy...' }] }
+      ];
+      let activeTabId = 'tab-1';
+      let previewTabId = 'tab-1';
+      let currentTheme = 'light';
+
+      // --- Core Logic ---
+      function init() {
+        lucide.createIcons();
+        setupSidebar();
+        setupCanvas();
+        setupActions();
+        setupTabs();
+        setupTheme();
+        setupBadgeModal();
+        setupTemplates();
+        setupImport();
+        render();
+        
+        mermaid.initialize({ 
+          startOnLoad: false, 
+          theme: 'neutral',
+          securityLevel: 'loose',
+          flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
+          sequence: { useMaxWidth: true, showSequenceNumbers: true },
+          class: { useMaxWidth: true },
+          state: { useMaxWidth: true },
+          er: { useMaxWidth: true },
+          journey: { useMaxWidth: true }
+        });
+      }
+
+      function setupSidebar() {
+        const sidebarList = document.getElementById('sidebar-list');
+        const layoutList = document.getElementById('layout-list');
+        const diagramList = document.getElementById('diagram-list');
+
+        Object.entries(COMPONENT_DEFS).forEach(([type, def]) => {
+          if (type.startsWith('mermaid_')) {
+            diagramList.appendChild(createSidebarItem(type, def));
+          } else {
+            sidebarList.appendChild(createSidebarItem(type, def));
+          }
+        });
+        Object.entries(LAYOUT_DEFS).forEach(([type, def]) => {
+          layoutList.appendChild(createSidebarItem(type, def));
+        });
+
+        lucide.createIcons();
+
+        new Sortable(sidebarList, { group: { name: 'shared', pull: 'clone', put: false }, sort: false, animation: 150 });
+        new Sortable(layoutList, { group: { name: 'shared', pull: 'clone', put: false }, sort: false, animation: 150 });
+        new Sortable(diagramList, { group: { name: 'shared', pull: 'clone', put: false }, sort: false, animation: 150 });
+      }
+
+      function createSidebarItem(type, def) {
+        const item = document.createElement('div');
+        item.className = 'flex items-center gap-3 p-2.5 rounded-lg border border-slate-200 bg-white hover:border-blue-400 transition-all cursor-grab active:cursor-grabbing group shadow-sm';
+        item.dataset.type = type;
+        item.innerHTML = `
+          <div class="p-1.5 bg-slate-100 rounded-md group-hover:bg-blue-50 transition-colors">
+            <i data-lucide="${def.icon}" class="w-3.5 h-3.5 text-slate-600 group-hover:text-blue-600"></i>
+          </div>
+          <span class="text-xs font-medium text-slate-700">${def.label}</span>
+        `;
+        return item;
+      }
+
+      function renderTabs() {
+        const container = document.getElementById('tabs-container');
+        const previewTabsContainer = document.getElementById('preview-tabs-container');
+        const addBtn = document.getElementById('btn-add-tab');
+        
+        container.innerHTML = '';
+        previewTabsContainer.innerHTML = '';
+        
+        tabs.forEach(tab => {
+          // Editor Tabs
+          const btn = document.createElement('button');
+          btn.className = `px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-2 ${tab.id === activeTabId ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`;
+          btn.innerHTML = `<span>${tab.name}</span>`;
+          if (tabs.length > 1) {
+            const closeBtn = document.createElement('span');
+            closeBtn.className = 'w-4 h-4 flex items-center justify-center rounded-full hover:bg-red-100 transition-colors ml-1';
+            closeBtn.innerHTML = '<i data-lucide="x" class="w-3 h-3 text-slate-400 hover:text-red-500"></i>';
+            closeBtn.onclick = (e) => {
+              e.stopPropagation();
+              tabs = tabs.filter(t => t.id !== tab.id);
+              if (activeTabId === tab.id) activeTabId = tabs[0].id;
+              if (previewTabId === tab.id) previewTabId = tabs[0].id;
+              renderTabs();
+              render();
+            };
+            btn.appendChild(closeBtn);
+          }
+          btn.onclick = () => {
+            activeTabId = tab.id;
+            renderTabs();
+            render();
+          };
+          btn.ondblclick = (e) => {
+            e.stopPropagation();
+            const newName = prompt('Rename Tab:', tab.name);
+            if (newName) {
+              tab.name = newName;
+              renderTabs();
+              render();
+            }
+          };
+          container.appendChild(btn);
+
+          // Preview Tabs
+          const pBtn = document.createElement('button');
+          pBtn.className = `px-3 py-1 text-[10px] font-bold uppercase rounded transition-all ${tab.id === previewTabId ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500 hover:bg-slate-300'}`;
+          pBtn.textContent = tab.name;
+          pBtn.onclick = () => {
+            previewTabId = tab.id;
+            renderTabs();
+            updatePreview();
+          };
+          previewTabsContainer.appendChild(pBtn);
+        });
+        container.appendChild(addBtn);
+        lucide.createIcons();
+      }
+
+      function setupTabs() {
+        const addBtn = document.getElementById('btn-add-tab');
+        
+        addBtn.onclick = () => {
+          const id = `tab-${Date.now()}`;
+          const name = prompt('Tab Name:', 'NEW_FILE.md') || 'NEW_FILE.md';
+          tabs.push({ id, name, components: [] });
+          activeTabId = id;
+          renderTabs();
+          render();
+        };
+
+        renderTabs();
+      }
+
+      function setupTheme() {
+        const lightBtn = document.getElementById('theme-light');
+        const darkBtn = document.getElementById('theme-dark');
+        const previewOuter = document.getElementById('preview-outer');
+
+        lightBtn.onclick = () => {
+          currentTheme = 'light';
+          lightBtn.className = 'p-1.5 rounded-md bg-white shadow-sm text-blue-600 transition-all';
+          darkBtn.className = 'p-1.5 rounded-md text-slate-500 hover:text-slate-700 transition-all';
+          previewOuter.className = 'flex-1 overflow-y-auto github-light transition-colors duration-300';
+        };
+
+        darkBtn.onclick = () => {
+          currentTheme = 'dark';
+          darkBtn.className = 'p-1.5 rounded-md bg-white shadow-sm text-blue-600 transition-all';
+          lightBtn.className = 'p-1.5 rounded-md text-slate-500 hover:text-slate-700 transition-all';
+          previewOuter.className = 'flex-1 overflow-y-auto github-dark transition-colors duration-300';
+        };
+      }
+
+      function setupCanvas() {
+        const canvas = document.getElementById('editor-canvas');
+        new Sortable(canvas, {
+          group: 'shared',
+          animation: 150,
+          handle: '.drag-handle',
+          ghostClass: 'bg-blue-50',
+          onAdd: (evt) => {
+            const type = evt.item.dataset.type;
+            const id = `comp-${Date.now()}`;
+            const newComp = { id, type, content: (COMPONENT_DEFS[type] || LAYOUT_DEFS[type]).default, children: [] };
+            
+            evt.item.remove();
+            const activeTab = tabs.find(t => t.id === activeTabId);
+            activeTab.components.splice(evt.newIndex, 0, newComp);
+            render();
+          },
+          onUpdate: (evt) => {
+            const activeTab = tabs.find(t => t.id === activeTabId);
+            const [moved] = activeTab.components.splice(evt.oldIndex, 1);
+            activeTab.components.splice(evt.newIndex, 0, moved);
+            updatePreview();
+          }
+        });
+      }
+
+      function render() {
+        const canvas = document.getElementById('editor-canvas');
+        const activeTab = tabs.find(t => t.id === activeTabId);
+        
+        canvas.innerHTML = '';
+
+        if (activeTab.components.length === 0) {
+          canvas.innerHTML = `
+            <div class="flex flex-col items-center justify-center h-full text-slate-400 py-20 pointer-events-none">
+              <div class="p-4 bg-slate-100 rounded-full mb-4">
+                <i data-lucide="grip-vertical" class="w-8 h-8"></i>
+              </div>
+              <p class="text-lg font-medium">Canvas is empty</p>
+              <p class="text-sm">Drag components here</p>
+            </div>
+          `;
+          lucide.createIcons();
+          updatePreview();
+          return;
+        }
+
+        activeTab.components.forEach((comp) => {
+          canvas.appendChild(createComponentUI(comp, activeTab.components));
+        });
+
+        lucide.createIcons();
+        updatePreview();
+      }
+
+      function createComponentUI(comp, parentList) {
+        const el = document.createElement('div');
+        el.className = 'group relative bg-white rounded-xl border border-slate-200 shadow-sm transition-all p-4';
+        el.dataset.id = comp.id;
+        
+        let editorHtml = '';
+        let showToolbar = ['heading', 'paragraph', 'list', 'steps', 'changelog'].includes(comp.type);
+
+        if (comp.type === 'badge') editorHtml = getBadgeEditor(comp);
+        else if (comp.type === 'table') editorHtml = getTableEditor(comp);
+        else if (comp.type === 'row') editorHtml = getRowEditor(comp);
+        else if (comp.type === 'toc') editorHtml = '<div class="p-4 bg-slate-50 rounded-lg border border-dashed border-slate-300 text-center text-xs text-slate-400">Table of Contents (Auto-generated)</div>';
+        else if (comp.type === 'heading') editorHtml = getHeadingEditor(comp);
+        else if (comp.type === 'math') editorHtml = getMathEditor(comp);
+        else {
+          const isOneLiner = ['image', 'link'].includes(comp.type);
+          const isBadgeParagraph = comp.type === 'paragraph' && comp.content.includes('![') && comp.content.includes('](') && comp.content.length < 500;
+          editorHtml = `<textarea class="w-full min-h-[80px] p-3 text-sm font-mono bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-y transition-all ${isOneLiner || isBadgeParagraph ? 'no-wrap-textarea' : ''}">${comp.content}</textarea>`;
+        }
+
+        const toolbarHtml = showToolbar ? `
+          <div class="flex items-center gap-1 mb-2 pb-2 border-b border-slate-100">
+            <button class="p-1 hover:bg-slate-100 rounded text-slate-500 transition-colors flex items-center justify-center btn-format" data-format="bold" title="Bold"><i data-lucide="bold" class="w-3.5 h-3.5"></i></button>
+            <button class="p-1 hover:bg-slate-100 rounded text-slate-500 transition-colors flex items-center justify-center btn-format" data-format="italic" title="Italic"><i data-lucide="italic" class="w-3.5 h-3.5"></i></button>
+            <button class="p-1 hover:bg-slate-100 rounded text-slate-500 transition-colors flex items-center justify-center btn-format" data-format="underline" title="Underline"><i data-lucide="underline" class="w-3.5 h-3.5"></i></button>
+            <div class="w-px h-4 bg-slate-200 mx-1"></div>
+            <button class="p-1 hover:bg-slate-100 rounded text-slate-500 transition-colors flex items-center justify-center btn-format" data-format="link" title="Link"><i data-lucide="link" class="w-3.5 h-3.5"></i></button>
+            <div class="w-px h-4 bg-slate-200 mx-1"></div>
+            <button class="p-1 hover:bg-slate-100 rounded text-slate-500 transition-colors flex items-center justify-center btn-format" data-format="align-left" title="Align Left"><i data-lucide="align-left" class="w-3.5 h-3.5"></i></button>
+            <button class="p-1 hover:bg-slate-100 rounded text-slate-500 transition-colors flex items-center justify-center btn-format" data-format="align-center" title="Align Center"><i data-lucide="align-center" class="w-3.5 h-3.5"></i></button>
+            <button class="p-1 hover:bg-slate-100 rounded text-slate-500 transition-colors flex items-center justify-center btn-format" data-format="align-right" title="Align Right"><i data-lucide="align-right" class="w-3.5 h-3.5"></i></button>
+          </div>
+        ` : '';
+
+        el.innerHTML = `
+          <div class="flex items-start gap-4">
+            <div class="drag-handle mt-1 text-slate-400 hover:text-slate-600 cursor-grab active:cursor-grabbing">
+              <i data-lucide="grip-vertical" class="w-5 h-5"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-blue-500 bg-blue-50 px-2 py-0.5 rounded">
+                  ${comp.type.startsWith('mermaid_') ? 'Mermaid' : comp.type}
+                </span>
+                <button class="btn-delete p-1.5 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              </div>
+              ${toolbarHtml}
+              <div class="editor-container">${editorHtml}</div>
+            </div>
+          </div>
+        `;
+
+        // Listeners
+        const textarea = el.querySelector('textarea');
+        if (textarea) {
+          textarea.addEventListener('input', (e) => {
+            comp.content = e.target.value;
+            updatePreview();
+          });
+
+          // Toolbar logic
+          el.querySelectorAll('.btn-format').forEach(btn => {
+            btn.onclick = () => {
+              const format = btn.dataset.format;
+              applyFormat(textarea, format, comp);
+            };
+          });
+        }
+
+        if (comp.type === 'badge') setupBadgeListeners(el, comp);
+        if (comp.type === 'table') setupTableListeners(el, comp);
+        if (comp.type === 'row') setupRowListeners(el, comp);
+        if (comp.type === 'heading') setupHeadingListeners(el, comp);
+
+        el.querySelector('.btn-delete').addEventListener('click', () => {
+          const idx = parentList.findIndex(c => c.id === comp.id);
+          parentList.splice(idx, 1);
+          render();
+        });
+
+        return el;
+      }
+
+      function applyFormat(textarea, format, comp) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value;
+        const selected = text.substring(start, end);
+        
+        // Handle selection with trailing spaces
+        const trimmed = selected.trim();
+        const leadingSpace = selected.match(/^\s*/)[0];
+        const trailingSpace = selected.match(/\s*$/)[0];
+        
+        let replacement = '';
+
+        switch (format) {
+          case 'bold': replacement = `${leadingSpace}**${trimmed}**${trailingSpace}`; break;
+          case 'italic': replacement = `${leadingSpace}*${trimmed}*${trailingSpace}`; break;
+          case 'underline': replacement = `${leadingSpace}<u>${trimmed}</u>${trailingSpace}`; break;
+          case 'link': replacement = `${leadingSpace}[${trimmed || 'link text'}](https://example.com)${trailingSpace}`; break;
+          case 'align-left': replacement = `\n\n<div align="left">\n\n${selected || 'text'}\n\n</div>\n\n`; break;
+          case 'align-center': replacement = `\n\n<div align="center">\n\n${selected || 'text'}\n\n</div>\n\n`; break;
+          case 'align-right': replacement = `\n\n<div align="right">\n\n${selected || 'text'}\n\n</div>\n\n`; break;
+        }
+
+        textarea.value = text.substring(0, start) + replacement + text.substring(end);
+        comp.content = textarea.value;
+        updatePreview();
+        textarea.focus();
+      }
+
+      function getHeadingEditor(comp) {
+        const level = (comp.content.match(/^#+/) || ['#'])[0].length;
+        const text = comp.content.replace(/^#+\s*/, '');
+        return `
+          <div class="flex gap-2 mb-2">
+            <select class="heading-level text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1">
+              <option value="1" ${level === 1 ? 'selected' : ''}>H1</option>
+              <option value="2" ${level === 2 ? 'selected' : ''}>H2</option>
+              <option value="3" ${level === 3 ? 'selected' : ''}>H3</option>
+              <option value="4" ${level === 4 ? 'selected' : ''}>H4</option>
+              <option value="5" ${level === 5 ? 'selected' : ''}>H5</option>
+              <option value="6" ${level === 6 ? 'selected' : ''}>H6</option>
+            </select>
+          </div>
+          <textarea class="w-full min-h-[60px] p-3 text-sm font-mono bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-y transition-all">${text}</textarea>
+        `;
+      }
+
+      function getMathEditor(comp) {
+        return `
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">KaTeX Editor</span>
+            <a href="https://katex.org/docs/supported" target="_blank" rel="noopener noreferrer" class="text-[10px] font-bold uppercase text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors">
+              <i data-lucide="external-link" class="w-3 h-3"></i>
+              Examples
+            </a>
+          </div>
+          <textarea class="w-full min-h-[80px] p-3 text-sm font-mono bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-y transition-all">${comp.content}</textarea>
+        `;
+      }
+
+      function setupHeadingListeners(el, comp) {
+        const select = el.querySelector('.heading-level');
+        const textarea = el.querySelector('textarea');
+        
+        const update = () => {
+          const level = '#'.repeat(parseInt(select.value));
+          comp.content = `${level} ${textarea.value}`;
+          updatePreview();
+        };
+
+        select.onchange = update;
+        textarea.oninput = update;
+      }
+
+      function getRowEditor(comp) {
+        if (!comp.metadata) comp.metadata = { cols: [ { width: 50, components: [] }, { width: 50, components: [] } ] };
+        
+        let colsHtml = '';
+        comp.metadata.cols.forEach((col, idx) => {
+          colsHtml += `
+            <div class="col-container flex flex-col gap-2 p-2 bg-slate-50/50 border border-slate-200 rounded-lg" style="flex: ${col.width}">
+              <div class="flex items-center justify-between px-1">
+                <div class="flex items-center gap-1">
+                  <input type="number" class="col-width-input w-10 text-[10px] bg-white border border-slate-200 rounded px-1" value="${col.width}" data-idx="${idx}">
+                  <span class="text-[8px] text-slate-400 font-bold">%</span>
+                </div>
+                <button class="btn-delete-col p-1 text-slate-400 hover:text-red-500 transition-colors" data-idx="${idx}">
+                  <i data-lucide="trash-2" class="w-3 h-3"></i>
+                </button>
+              </div>
+              <div class="canvas-drop-zone space-y-2 p-2 min-h-[100px]" data-col-idx="${idx}"></div>
+            </div>
+          `;
+        });
+
+        return `
+          <div class="space-y-3">
+            <div class="row-container">${colsHtml}</div>
+            <div class="flex gap-2">
+              <button class="btn-add-col text-[10px] px-2 py-1 bg-slate-100 rounded hover:bg-slate-200">+ Column</button>
+            </div>
+          </div>
+        `;
+      }
+
+      function setupRowListeners(el, comp) {
+        const dropZones = el.querySelectorAll('.canvas-drop-zone');
+        dropZones.forEach((zone, idx) => {
+          new Sortable(zone, {
+            group: 'shared',
+            animation: 150,
+            onAdd: (evt) => {
+              const type = evt.item.dataset.type;
+              const id = `comp-${Date.now()}`;
+              const newComp = { id, type, content: (COMPONENT_DEFS[type] || LAYOUT_DEFS[type]).default, children: [] };
+              evt.item.remove();
+              comp.metadata.cols[idx].components.splice(evt.newIndex, 0, newComp);
+              render();
+            },
+            onUpdate: (evt) => {
+              const [moved] = comp.metadata.cols[idx].components.splice(evt.oldIndex, 1);
+              comp.metadata.cols[idx].components.splice(evt.newIndex, 0, moved);
+              updatePreview();
+            }
+          });
+
+          // Render children
+          comp.metadata.cols[idx].components.forEach(child => {
+            zone.appendChild(createComponentUI(child, comp.metadata.cols[idx].components));
+          });
+        });
+
+        el.querySelectorAll('.col-width-input').forEach(input => {
+          input.onchange = (e) => {
+            comp.metadata.cols[e.target.dataset.idx].width = parseInt(e.target.value);
+            updatePreview();
+          };
+        });
+
+        el.querySelector('.btn-add-col').onclick = () => {
+          comp.metadata.cols.push({ width: 33, components: [] });
+          render();
+        };
+
+        el.querySelectorAll('.btn-delete-col').forEach(btn => {
+          btn.onclick = () => {
+            const idx = parseInt(btn.dataset.idx);
+            comp.metadata.cols.splice(idx, 1);
+            render();
+          };
+        });
+      }
+
+      function setupTemplates() {
+        const modal = document.getElementById('template-modal');
+        const btnNew = document.getElementById('btn-new-project');
+        const close = document.getElementById('close-template-modal');
+        const options = document.querySelectorAll('.template-option');
+
+        btnNew.onclick = () => modal.classList.remove('hidden');
+        close.onclick = () => modal.classList.add('hidden');
+
+        options.forEach(opt => {
+          opt.onclick = () => {
+            const template = opt.dataset.template;
+            applyTemplate(template);
+            modal.classList.add('hidden');
+          };
+        });
+      }
+
+      function applyTemplate(type) {
+        if (type === 'new') {
+          tabs = [
+            { id: 'tab-readme', name: 'README.md', components: [] },
+            { id: 'tab-license', name: 'LICENSE.md', components: [] }
+          ];
+        } else if (type === 'preset1') {
+          tabs = [
+            { 
+              id: 'tab-readme', 
+              name: 'README.md', 
+              components: [
+                { id: 'p1-1', type: 'heading', content: '# <div align="center">ZaReadme</div>' },
+                { id: 'p1-2', type: 'paragraph', content: '<div align="center">\n\n![HTML5](https://img.shields.io/badge/html5-%23E34F26.svg?style=for-the-badge&logo=html5&logoColor=white) ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white) ![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E) ![Lucide](https://img.shields.io/badge/lucide-%235E6AD2.svg?style=for-the-badge&logo=lucide&logoColor=white) ![Mermaid](https://img.shields.io/badge/mermaid-%23FF69B4.svg?style=for-the-badge&logo=mermaid&logoColor=white)\n\n</div>' },
+                { id: 'p1-3', type: 'image', content: '<div align="center">\n\n![ZaReadme Screenshot](https://picsum.photos/seed/zareadme-editor/1200/600)\n\n</div>' },
+                { id: 'p1-4', type: 'heading', content: '## 🚀 Features' },
+                { id: 'p1-5', type: 'list', content: '- **Visual Drag & Drop**: Build your README without writing a single line of markdown.\n- **Real-time Preview**: See exactly how your documentation will look on GitHub.\n- **Smart Components**: Dedicated editors for Badges, Tables, Mermaid diagrams, and KaTeX math.\n- **Multi-file Workspace**: Manage README, LICENSE, and CHANGELOG in one place.' },
+                { id: 'p1-6', type: 'heading', content: '## 🛠️ Tech Stack' },
+                { id: 'p1-7', type: 'list', content: '- **Core**: Vanilla JavaScript, HTML5\n- **Styling**: Tailwind CSS\n- **Icons**: Lucide Icons\n- **Parsing**: Marked.js (Markdown), KaTeX (Math), Mermaid.js (Diagrams)\n- **Interactions**: SortableJS' },
+                { id: 'p1-8', type: 'heading', content: '## 📦 Getting Started' },
+                { id: 'p1-9', type: 'code', content: '```bash\n# Just open the app and start dragging!\n```' }
+              ] 
+            },
+            { id: 'tab-license', name: 'LICENSE.md', components: [{ id: 'p1-10', type: 'paragraph', content: 'MIT License\n\nCopyright (c) 2024 ZaReadme Team\n\nPermission is hereby granted, free of charge, to any person obtaining a copy...' }] }
+          ];
+        } else if (type === 'preset2') {
+          tabs = [
+            { 
+              id: 'tab-welcome', 
+              name: 'Welcome.md', 
+              components: [
+                { id: 'w1', type: 'heading', content: '# <div align="center">ZaReadme</div>' },
+                { id: 'w2', type: 'paragraph', content: '<div align="center">\n\n![Status](https://img.shields.io/badge/status-active-success) ![License](https://img.shields.io/badge/license-MIT-blue) ![Version](https://img.shields.io/badge/version-1.0-informational)\n\n</div>' },
+                { id: 'w3', type: 'paragraph', content: 'Welcome to **ZaReadme**, the ultimate tool for creating professional, high-quality documentation for your GitHub projects. No more wrestling with raw markdown syntax—just drag, drop, and export.' },
+                { id: 'w4', type: 'image', content: '![App Banner](https://picsum.photos/seed/readme-editor/1200/400)' },
+                { id: 'w5', type: 'heading', content: '## ✨ Key Benefits' },
+                { id: 'w6', type: 'list', content: '- **Visual Editing**: See your changes in real-time with our side-by-side preview.\n- **Smart Components**: Pre-built elements for Badges, Mermaid diagrams, and KaTeX math.\n- **Tabbed Workspace**: Manage multiple documentation files (README, LICENSE, CHANGELOG) in one place.\n- **One-Click Export**: Copy to clipboard or download as a `.zip` instantly.' }
+              ] 
+            },
+            { 
+              id: 'tab-howto', 
+              name: 'HowTo.md', 
+              components: [
+                { id: 'h1', type: 'heading', content: '# 📖 How to Use' },
+                { id: 'h2', type: 'heading', content: '### 1. Adding Content' },
+                { id: 'h3', type: 'paragraph', content: 'Simply drag any component from the left sidebar (Content, Layout, or Diagrams) onto the center canvas. You can reorder them at any time by dragging the handle.' },
+                { id: 'h4', type: 'heading', content: '### 2. Editing' },
+                { id: 'h5', type: 'paragraph', content: 'Click inside any component to edit its content. For text-based elements, a formatting toolbar will appear at the top to help you with Bold, Italic, and Links.' },
+                { id: 'h6', type: 'heading', content: '### 3. Managing Tabs' },
+                { id: 'h7', type: 'paragraph', content: 'Use the tab bar at the top to switch between files. **Double-click** a tab to rename it, or click the **+** button to add a new one.' },
+                { id: 'h8', type: 'heading', content: '### 4. Importing' },
+                { id: 'h9', type: 'paragraph', content: 'Have an existing README? Click the **Import** button in the header to convert your markdown file into editable components.' }
+              ] 
+            },
+            { 
+              id: 'tab-examples', 
+              name: 'Examples.md', 
+              components: [
+                { id: 'e1', type: 'heading', content: '# 🚀 Component Examples' },
+                { id: 'e2', type: 'heading', content: '## Mermaid Diagrams' },
+                { id: 'e3', type: 'mermaid_flow', content: '```mermaid\ngraph LR\n  A[User] --> B(Editor)\n  B --> C{Action}\n  C -->|Edit| D[Preview]\n  C -->|Export| E[Markdown]\n```' },
+                { id: 'e4', type: 'heading', content: '## Mathematical Formulas' },
+                { id: 'e5', type: 'math', content: '$$ \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} $$' },
+                { id: 'e6', type: 'heading', content: '## Data Tables' },
+                { id: 'e7', type: 'table', content: '| Feature | Support | Status |\n| :--- | :---: | ---: |\n| Markdown | Full | ✅ |\n| Mermaid | Full | ✅ |\n| KaTeX | Full | ✅ |' }
+              ] 
+            },
+            { 
+              id: 'tab-versioning', 
+              name: 'Versioning.md', 
+              components: [
+                { id: 'v1', type: 'heading', content: '# 📅 Version History' },
+                { id: 'v1_0', type: 'steps', content: '<!-- ROADMAP -->\n## Roadmap\n\n- [x] Add Changelog\n- [x] Add back to top links\n- [x] Add Mermaid Diagram Support\n- [ ] Multi-language Support\n- [ ] Cloud Sync' },
+                { id: 'v3', type: 'changelog', content: '### [1.0.0] - 2026-04-05\n\n#### Added\n- Initial release with drag-and-drop editor\n- Mermaid diagram support (6 types)\n- Markdown import/export functionality\n- Tab management with renaming' }
+              ] 
+            },
+            { 
+              id: 'tab-contact', 
+              name: 'Contact.md', 
+              components: [
+                { id: 'c1', type: 'heading', content: '# 📬 Get in Touch' },
+                { id: 'c2', type: 'paragraph', content: 'If you have any questions, suggestions, or just want to say hi, feel free to reach out!' },
+                { id: 'c3', type: 'list', content: '- **Email**: support@zareadme.pro\n- **GitHub**: [ZaReadme/issues](https://github.com/example/issues)\n- **Twitter**: [@ZaReadme](https://twitter.com/example)' }
+              ] 
+            },
+            { 
+              id: 'tab-license', 
+              name: 'LICENSE.md', 
+              components: [
+                { id: 'l1', type: 'heading', content: '# MIT License' },
+                { id: 'l2', type: 'paragraph', content: 'Copyright (c) 2026 ZaReadme Team\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files...' }
+              ] 
+            }
+          ];
+        }
+        activeTabId = tabs[0].id;
+        previewTabId = tabs[0].id;
+        renderTabs();
+        render();
+        showNotification(`Applied ${type} template`);
+      }
+
+      function setupImport() {
+        const btn = document.getElementById('btn-import');
+        const input = document.getElementById('import-file');
+
+        btn.onclick = () => input.click();
+
+        input.onchange = (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const content = event.target.result;
+            const components = parseMarkdown(content);
+            const id = `tab-import-${Date.now()}`;
+            tabs = [{ id, name: file.name, components }];
+            activeTabId = id;
+            previewTabId = id;
+            renderTabs();
+            render();
+            showNotification(`Imported ${file.name}`);
+          };
+          reader.readAsText(file);
+          input.value = ''; // Reset for next import
+        };
+      }
+
+      function parseMarkdown(md) {
+        const lines = md.split('\n');
+        const components = [];
+        let currentType = null;
+        let currentContent = [];
+        let inCodeBlock = false;
+
+        const flush = () => {
+          if (currentType && currentContent.length > 0) {
+            components.push({
+              id: `comp-import-${Date.now()}-${components.length}`,
+              type: currentType,
+              content: currentContent.join('\n').trim()
+            });
+            currentContent = [];
+          }
+        };
+
+        lines.forEach(line => {
+          if (line.startsWith('```')) {
+            if (inCodeBlock) {
+              currentContent.push(line);
+              flush();
+              inCodeBlock = false;
+              currentType = null;
+            } else {
+              flush();
+              inCodeBlock = true;
+              currentType = line.includes('mermaid') ? 'mermaid_flow' : 'code';
+              currentContent = [line];
+            }
+            return;
+          }
+
+          if (inCodeBlock) {
+            currentContent.push(line);
+            return;
+          }
+
+          if (line.startsWith('#')) {
+            flush();
+            currentType = 'heading';
+            currentContent = [line];
+            flush();
+            currentType = null;
+          } else if (line.startsWith('![')) {
+            flush();
+            currentType = 'image';
+            currentContent = [line];
+            flush();
+            currentType = null;
+          } else if (line.startsWith('- ') || line.startsWith('* ') || /^\d+\. /.test(line)) {
+            if (currentType !== 'list') {
+              flush();
+              currentType = 'list';
+            }
+            currentContent.push(line);
+          } else if (line.trim() === '') {
+            flush();
+            currentType = null;
+          } else {
+            if (!currentType || currentType === 'heading' || currentType === 'image') {
+              flush();
+              currentType = 'paragraph';
+            }
+            currentContent.push(line);
+          }
+        });
+        flush();
+        return components;
+      }
+      function setupBadgeModal() {
+        const modal = document.getElementById('badge-modal');
+        const results = document.getElementById('badge-results');
+        const search = document.getElementById('badge-search');
+        const close = document.getElementById('close-badge-modal');
+        
+        const tabSearch = document.getElementById('tab-badge-search');
+        const tabDynamic = document.getElementById('tab-badge-dynamic');
+        const sectionSearch = document.getElementById('badge-search-section');
+        const sectionDynamic = document.getElementById('badge-dynamic-section');
+        
+        const btnCreateDynamic = document.getElementById('btn-create-dynamic');
+        
+        let currentBadgeComp = null;
+
+        const switchTab = (tab) => {
+          if (tab === 'search') {
+            tabSearch.className = 'py-2 text-sm font-bold border-b-2 border-blue-600 text-blue-600 transition-all';
+            tabDynamic.className = 'py-2 text-sm font-bold text-slate-400 hover:text-slate-600 transition-all';
+            sectionSearch.classList.remove('hidden');
+            sectionDynamic.classList.add('hidden');
+          } else {
+            tabDynamic.className = 'py-2 text-sm font-bold border-b-2 border-blue-600 text-blue-600 transition-all';
+            tabSearch.className = 'py-2 text-sm font-bold text-slate-400 hover:text-slate-600 transition-all';
+            sectionSearch.classList.add('hidden');
+            sectionDynamic.classList.remove('hidden');
+          }
+        };
+
+        tabSearch.onclick = () => switchTab('search');
+        tabDynamic.onclick = () => switchTab('dynamic');
+
+        const renderResults = (query = '') => {
+          results.innerHTML = '';
+          const filtered = BADGE_DB.filter(b => b.label.toLowerCase().includes(query.toLowerCase()) || b.category.toLowerCase().includes(query.toLowerCase()));
+          filtered.forEach(badge => {
+            const btn = document.createElement('button');
+            btn.className = 'flex flex-col items-start p-3 border border-slate-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all text-left group';
+            const url = `https://img.shields.io/badge/${encodeURIComponent(badge.label)}-${encodeURIComponent(badge.message)}-${badge.color}`;
+            btn.innerHTML = `
+              <img src="${url}" class="h-5 mb-2">
+              <span class="text-xs font-bold text-slate-700">${badge.label}</span>
+              <span class="text-[10px] text-slate-400">${badge.category}</span>
+            `;
+            btn.onclick = () => {
+              const badgeMarkdown = `![${badge.label}](${url})`;
+              const isCentered = currentBadgeComp.content.includes('<div align="center">');
+              const rawContent = isCentered ? currentBadgeComp.content.replace('<div align="center">\n\n', '').replace('\n\n</div>', '') : currentBadgeComp.content;
+              
+              if (window.currentBadgeAppend) {
+                const newRaw = (rawContent ? rawContent + ' ' : '') + badgeMarkdown;
+                currentBadgeComp.content = isCentered ? `<div align="center">\n\n${newRaw}\n\n</div>` : newRaw;
+              } else {
+                currentBadgeComp.content = isCentered ? `<div align="center">\n\n${badgeMarkdown}\n\n</div>` : badgeMarkdown;
+              }
+              modal.classList.add('hidden');
+              render();
+            };
+            results.appendChild(btn);
+          });
+        };
+
+        btnCreateDynamic.onclick = () => {
+          const url = document.getElementById('dynamic-badge-url').value;
+          const query = document.getElementById('dynamic-badge-query').value;
+          const label = document.getElementById('dynamic-badge-label').value;
+          const color = document.getElementById('dynamic-badge-color').value || 'blue';
+
+          if (!url || !query || !label) {
+            showNotification('Please fill in all required fields');
+            return;
+          }
+
+          const badgeUrl = `https://img.shields.io/badge/dynamic/json?url=${encodeURIComponent(url)}&query=${encodeURIComponent(query)}&label=${encodeURIComponent(label)}&color=${color}`;
+          const badgeMarkdown = `![${label}](${badgeUrl})`;
+          const isCentered = currentBadgeComp.content.includes('<div align="center">');
+          const rawContent = isCentered ? currentBadgeComp.content.replace('<div align="center">\n\n', '').replace('\n\n</div>', '') : currentBadgeComp.content;
+
+          if (window.currentBadgeAppend) {
+            const newRaw = (rawContent ? rawContent + ' ' : '') + badgeMarkdown;
+            currentBadgeComp.content = isCentered ? `<div align="center">\n\n${newRaw}\n\n</div>` : newRaw;
+          } else {
+            currentBadgeComp.content = isCentered ? `<div align="center">\n\n${badgeMarkdown}\n\n</div>` : badgeMarkdown;
+          }
+          modal.classList.add('hidden');
+          render();
+        };
+
+        search.oninput = (e) => renderResults(e.target.value);
+        close.onclick = () => modal.classList.add('hidden');
+
+        window.openBadgeExplorer = (comp, append = false) => {
+          currentBadgeComp = comp;
+          currentBadgeAppend = append;
+          modal.classList.remove('hidden');
+          switchTab('search');
+          renderResults();
+          lucide.createIcons();
+        };
+      }
+
+      function getBadgeEditor(comp) {
+        const badges = [...comp.content.matchAll(/!\[(.*?)\]\((.*?)\)/g)].map(m => ({ label: m[1], url: m[2] }));
+        const isCentered = comp.content.includes('<div align="center">');
+        const rawContent = isCentered ? comp.content.replace('<div align="center">\n\n', '').replace('\n\n</div>', '') : comp.content;
+
+        let badgesHtml = '';
+        badges.forEach((b, i) => {
+          badgesHtml += `
+            <div class="flex items-center gap-2 bg-white p-2 rounded border border-slate-200 shadow-sm">
+              <img src="${b.url}" class="h-4">
+              <button class="btn-remove-badge text-red-500 hover:text-red-700 transition-colors" data-index="${i}"><i data-lucide="x" class="w-3 h-3"></i></button>
+            </div>
+          `;
+        });
+
+        return `
+          <div class="space-y-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+            <div class="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
+              <div class="flex items-center gap-2">
+                <button class="btn-align-badge p-1 hover:bg-slate-200 rounded text-slate-500 transition-colors ${!isCentered ? 'bg-slate-200 text-blue-600' : ''}" data-align="left" title="Align Left"><i data-lucide="align-left" class="w-3.5 h-3.5"></i></button>
+                <button class="btn-align-badge p-1 hover:bg-slate-200 rounded text-slate-500 transition-colors ${isCentered ? 'bg-slate-200 text-blue-600' : ''}" data-align="center" title="Align Center"><i data-lucide="align-center" class="w-3.5 h-3.5"></i></button>
+              </div>
+              <button class="btn-add-badge-to-row flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 text-[10px] font-bold rounded border border-blue-100 hover:bg-blue-100 transition-all">
+                <i data-lucide="plus" class="w-3 h-3"></i> Add Badge
+              </button>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              ${badgesHtml}
+            </div>
+            <textarea class="w-full min-h-[60px] p-2 text-[10px] font-mono bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-y transition-all no-wrap-textarea">${comp.content}</textarea>
+          </div>
+        `;
+      }
+
+      function getTableEditor(comp) {
+        const rows = comp.content.trim().split('\n');
+        const dataRows = rows.filter(r => r.trim() && !r.includes('---') && !r.includes('---'));
+        
+        // Simple parser for markdown table
+        const parseRow = (row) => row.split('|').filter((_, i, a) => i > 0 && i < a.length - 1).map(c => c.trim());
+        const tableData = dataRows.map(parseRow);
+        
+        if (tableData.length === 0) return `<textarea class="w-full min-h-[80px] p-3 text-sm font-mono bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-y transition-all">${comp.content}</textarea>`;
+
+        let tableHtml = '<table class="w-full text-xs border-collapse border border-slate-200 mb-2">';
+        tableData.forEach((row, rIdx) => {
+          tableHtml += '<tr>';
+          row.forEach((cell, cIdx) => {
+            tableHtml += `
+              <td class="border border-slate-200 p-1">
+                <input type="text" class="table-cell w-full bg-transparent outline-none" value="${cell}" data-row="${rIdx}" data-col="${cIdx}">
+              </td>
+            `;
+          });
+          tableHtml += '</tr>';
+        });
+        tableHtml += '</table>';
+
+        return `
+          <div class="space-y-2">
+            <div class="overflow-x-auto">${tableHtml}</div>
+            <div class="flex gap-2">
+              <button class="btn-add-row text-[10px] px-2 py-1 bg-slate-100 rounded hover:bg-slate-200">+ Row</button>
+              <button class="btn-add-col-table text-[10px] px-2 py-1 bg-slate-100 rounded hover:bg-slate-200">+ Column</button>
+              <button class="btn-del-col-table text-[10px] px-2 py-1 bg-slate-100 rounded hover:bg-red-50 hover:text-red-500">- Column</button>
+            </div>
+          </div>
+        `;
+      }
+
+      function setupTableListeners(el, comp) {
+        const inputs = el.querySelectorAll('.table-cell');
+        
+        const updateTable = () => {
+          const rows = [];
+          const rowCount = el.querySelectorAll('tr').length;
+          const colCount = el.querySelectorAll('tr:first-child td').length;
+
+          for (let r = 0; r < rowCount; r++) {
+            const row = [];
+            for (let c = 0; c < colCount; c++) {
+              const input = el.querySelector(`.table-cell[data-row="${r}"][data-col="${c}"]`);
+              row.push(input ? input.value : '');
+            }
+            rows.push(`| ${row.join(' | ')} |`);
+            if (r === 0) {
+              rows.push(`| ${row.map(() => '---').join(' | ')} |`);
+            }
+          }
+          comp.content = rows.join('\n');
+          updatePreview();
+        };
+
+        inputs.forEach(input => input.oninput = updateTable);
+
+        el.querySelector('.btn-add-row').onclick = () => {
+          const colCount = el.querySelectorAll('tr:first-child td').length;
+          comp.content += `\n| ${Array(colCount).fill('New').join(' | ')} |`;
+          render();
+        };
+
+        el.querySelector('.btn-add-col-table').onclick = () => {
+          const rows = comp.content.trim().split('\n');
+          const newRows = rows.map(r => {
+            if (r.trim() === '') return r;
+            const parts = r.split('|');
+            parts.splice(parts.length - 1, 0, ' New ');
+            return parts.join('|');
+          });
+          comp.content = newRows.join('\n');
+          render();
+        };
+
+        el.querySelector('.btn-del-col-table').onclick = () => {
+          const rows = comp.content.trim().split('\n');
+          const newRows = rows.map(r => {
+            if (r.trim() === '') return r;
+            const parts = r.split('|');
+            if (parts.length > 3) {
+              parts.splice(parts.length - 2, 1);
+            }
+            return parts.join('|');
+          });
+          comp.content = newRows.join('\n');
+          render();
+        };
+      }
+
+      function setupBadgeListeners(el, comp) {
+        const textarea = el.querySelector('textarea');
+        if (textarea) {
+          textarea.oninput = (e) => {
+            comp.content = e.target.value;
+            updatePreview();
+          };
+        }
+
+        const btnAdd = el.querySelector('.btn-add-badge-to-row');
+        if (btnAdd) {
+          btnAdd.onclick = () => window.openBadgeExplorer(comp, true);
+        }
+
+        el.querySelectorAll('.btn-align-badge').forEach(btn => {
+          btn.onclick = () => {
+            const align = btn.dataset.align;
+            const isCentered = comp.content.includes('<div align="center">');
+            const rawContent = isCentered ? comp.content.replace('<div align="center">\n\n', '').replace('\n\n</div>', '') : comp.content;
+            
+            if (align === 'center') {
+              comp.content = `<div align="center">\n\n${rawContent}\n\n</div>`;
+            } else {
+              comp.content = rawContent;
+            }
+            render();
+          };
+        });
+
+        el.querySelectorAll('.btn-remove-badge').forEach(btn => {
+          btn.onclick = () => {
+            const index = parseInt(btn.dataset.index);
+            const isCentered = comp.content.includes('<div align="center">');
+            const rawContent = isCentered ? comp.content.replace('<div align="center">\n\n', '').replace('\n\n</div>', '') : comp.content;
+            const badges = [...rawContent.matchAll(/!\[(.*?)\]\((.*?)\)/g)].map(m => ({ label: m[1], url: m[2] }));
+            badges.splice(index, 1);
+            const newRawContent = badges.map(b => `![${b.label}](${b.url})`).join(' ');
+            comp.content = isCentered ? `<div align="center">\n\n${newRawContent}\n\n</div>` : newRawContent;
+            render();
+          };
+        });
+      }
+
+      // --- Preview Rendering ---
+      async function updatePreview() {
+        const preview = document.getElementById('preview-container');
+        const activeTab = tabs.find(t => t.id === previewTabId);
+        
+        const fullMarkdown = generateMarkdown(activeTab.components);
+        
+        // Configure marked for better GFM support
+        marked.setOptions({
+          gfm: true,
+          breaks: true,
+          headerIds: true,
+          mangle: false
+        });
+        
+        let html = marked.parse(fullMarkdown);
+
+        // KaTeX
+        html = html.replace(/\$\$(.*?)\$\$/gs, (_, tex) => {
+          try { return katex.renderToString(tex, { displayMode: true, throwOnError: false }); }
+          catch (e) { return `<span class="text-red-500">${e}</span>`; }
+        });
+        html = html.replace(/\$(.*?)\$/g, (_, tex) => {
+          try { return katex.renderToString(tex, { displayMode: false, throwOnError: false }); }
+          catch (e) { return `<span class="text-red-500">${e}</span>`; }
+        });
+
+        preview.innerHTML = html;
+
+        // Make all external links open in a new tab
+        preview.querySelectorAll('a').forEach(a => {
+          const href = a.getAttribute('href');
+          if (href && !href.startsWith('#')) {
+            a.setAttribute('target', '_blank');
+            a.setAttribute('rel', 'noopener noreferrer');
+          }
+        });
+
+        // Mermaid
+        const mermaidBlocks = Array.from(preview.querySelectorAll('pre code.language-mermaid'));
+        for (const block of mermaidBlocks) {
+          const content = block.textContent;
+          const container = document.createElement('div');
+          container.className = 'mermaid my-6 flex justify-center bg-white p-6 rounded-xl border border-slate-200 shadow-sm overflow-x-auto';
+          container.textContent = content;
+          block.parentElement.replaceWith(container);
+        }
+        
+        if (mermaidBlocks.length > 0) {
+          try {
+            await mermaid.run({
+              nodes: preview.querySelectorAll('.mermaid'),
+              suppressErrors: true
+            });
+          } catch (e) {
+            console.error('Mermaid error:', e);
+            preview.querySelectorAll('.mermaid').forEach(m => {
+              if (m.innerHTML === m.textContent) {
+                m.innerHTML = `<div class="text-red-500 text-xs p-4 bg-red-50 rounded border border-red-200">
+                  <p class="font-bold mb-1">Mermaid Render Error</p>
+                  <p class="font-mono">${e.message || 'Invalid diagram syntax'}</p>
+                </div>`;
+              }
+            });
+          }
+        }
+      }
+
+      // --- Actions ---
+      function setupActions() {
+        document.getElementById('btn-copy').onclick = () => {
+          const activeTab = tabs.find(t => t.id === activeTabId);
+          // (Reuse generateMarkdown logic)
+          const markdown = generateMarkdown(activeTab.components);
+          navigator.clipboard.writeText(markdown);
+          showNotification('Copied to clipboard!');
+        };
+        // ... download logic ...
+      }
+
+      // Helper for generateMarkdown (needed for copy/download/preview)
+      function generateMarkdown(comps, allComps = null) {
+        if (!allComps) allComps = comps;
+        
+        const headings = [];
+        const traverseHeadings = (cs) => {
+          cs.forEach(c => {
+            if (c.type === 'heading') {
+              const level = (c.content.match(/^#+/) || ['#'])[0].length;
+              const text = c.content.replace(/^#+\s*/, '').trim();
+              headings.push({ level, text, id: text.toLowerCase().replace(/[^\w]+/g, '-') });
+            }
+            if (c.type === 'row') c.metadata.cols.forEach(col => traverseHeadings(col.components));
+          });
+        };
+        
+        // Only traverse for TOC at the top level
+        let tocMarkdown = '';
+        if (allComps === comps) {
+          traverseHeadings(allComps);
+          tocMarkdown = headings.map(h => `${'  '.repeat(h.level - 1)}- [${h.text}](#${h.id})`).join('\n');
+        }
+
+        return comps.map(c => {
+          if (c.type === 'row') {
+            let html = '<table width="100%"><tr>';
+            c.metadata.cols.forEach(col => {
+              html += `<td width="${col.width}%" valign="top">\n\n${generateMarkdown(col.components, allComps)}\n\n</td>`;
+            });
+            html += '</tr></table>';
+            return html;
+          }
+          if (c.type === 'toc') return tocMarkdown;
+          return c.content;
+        }).join('\n\n');
+      }
+
+      function showNotification(message) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed bottom-6 right-6 px-6 py-3 bg-slate-900 text-white text-sm font-bold rounded-xl shadow-2xl z-[100] animate-in fade-in slide-in-from-bottom-4 duration-300';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+          toast.classList.add('animate-out', 'fade-out', 'slide-out-to-bottom-4');
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }
+
+      init();
+    </script>
+  </body>
+</html>
+

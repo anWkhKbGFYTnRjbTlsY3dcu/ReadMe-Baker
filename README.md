@@ -13,4 +13,4 @@ Finished the project and you want a great Readme file?<br>
 Find here the ultimate tool for creating professional, high-quality documentation for your GitHub projects. No more wrestling with raw markdown syntax—just drag, drop, and export.<br>
 Check Other tabs for more details!
 
-![App Banner](https://raw.githubusercontent.com/anWkhKbGFYTnRjbTlsY3dcu/ReadMe-Baker/main/src/lib/img/read_homepage.png)
+![App Banner](https://github.com/anWkhKbGFYTnRjbTlsY3dcu/ReadMe-Baker/blob/main/src/lib/img/home.gif)

@@ -12,6 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -379,7 +380,7 @@
           components: [
             { id: 'init-1', type: 'heading', content: '# <div align="center">ZaReadme</div>' },
             { id: 'init-2', type: 'paragraph', content: '<div align="center">\n\n![HTML5](https://img.shields.io/badge/html5-%23E34F26.svg?style=for-the-badge&logo=html5&logoColor=white) ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white) ![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E) ![Lucide](https://img.shields.io/badge/lucide-%235E6AD2.svg?style=for-the-badge&logo=lucide&logoColor=white) ![Mermaid](https://img.shields.io/badge/mermaid-%23FF69B4.svg?style=for-the-badge&logo=mermaid&logoColor=white)\n\n</div>' },
-            { id: 'init-3', type: 'image', content: '<div align="center">\n\n![ZaReadme Screenshot](https://picsum.photos/seed/zareadme-editor/1200/600)\n\n</div>' },
+            { id: 'init-3', type: 'image', content: '<div align="center">\n\n![ZaReadme Screenshot](https://raw.githubusercontent.com/anWkhKbGFYTnRjbTlsY3dcu/ReadMe-Baker/main/src/lib/img/read_homepage.png)\n\n</div>' },
             { id: 'init-4', type: 'heading', content: '## 🚀 About the Project' },
             { id: 'init-5', type: 'paragraph', content: 'ZaReadme is a professional markdown editor designed specifically for creating high-quality GitHub documentation. Drag, drop, and export your documentation in seconds without wrestling with raw markdown syntax.' },
             { id: 'init-6', type: 'heading', content: '## 🛠️ Tech Stack' },
@@ -872,7 +873,7 @@
               components: [
                 { id: 'p1-1', type: 'heading', content: '# <div align="center">ZaReadme</div>' },
                 { id: 'p1-2', type: 'paragraph', content: '<div align="center">\n\n![HTML5](https://img.shields.io/badge/html5-%23E34F26.svg?style=for-the-badge&logo=html5&logoColor=white) ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white) ![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E) ![Lucide](https://img.shields.io/badge/lucide-%235E6AD2.svg?style=for-the-badge&logo=lucide&logoColor=white) ![Mermaid](https://img.shields.io/badge/mermaid-%23FF69B4.svg?style=for-the-badge&logo=mermaid&logoColor=white)\n\n</div>' },
-                { id: 'p1-3', type: 'image', content: '<div align="center">\n\n![ZaReadme Screenshot](https://picsum.photos/seed/zareadme-editor/1200/600)\n\n</div>' },
+                { id: 'p1-3', type: 'image', content: '<div align="center">\n\n![ZaReadme Screenshot](https://raw.githubusercontent.com/anWkhKbGFYTnRjbTlsY3dcu/ReadMe-Baker/main/src/lib/img/read_homepage.png)\n\n</div>' },
                 { id: 'p1-4', type: 'heading', content: '## 🚀 Features' },
                 { id: 'p1-5', type: 'list', content: '- **Visual Drag & Drop**: Build your README without writing a single line of markdown.\n- **Real-time Preview**: See exactly how your documentation will look on GitHub.\n- **Smart Components**: Dedicated editors for Badges, Tables, Mermaid diagrams, and KaTeX math.\n- **Multi-file Workspace**: Manage README, LICENSE, and CHANGELOG in one place.' },
                 { id: 'p1-6', type: 'heading', content: '## 🛠️ Tech Stack' },
@@ -892,7 +893,7 @@
                 { id: 'w1', type: 'heading', content: '# <div align="center">ZaReadme</div>' },
                 { id: 'w2', type: 'paragraph', content: '<div align="center">\n\n![Status](https://img.shields.io/badge/status-active-success) ![License](https://img.shields.io/badge/license-MIT-blue) ![Version](https://img.shields.io/badge/version-1.0-informational)\n\n</div>' },
                 { id: 'w3', type: 'paragraph', content: 'Welcome to **ZaReadme**, the ultimate tool for creating professional, high-quality documentation for your GitHub projects. No more wrestling with raw markdown syntax—just drag, drop, and export.' },
-                { id: 'w4', type: 'image', content: '![App Banner](https://picsum.photos/seed/readme-editor/1200/400)' },
+                { id: 'w4', type: 'image', content: '![App Banner](https://raw.githubusercontent.com/anWkhKbGFYTnRjbTlsY3dcu/ReadMe-Baker/main/src/lib/img/read_homepage.png)' },
                 { id: 'w5', type: 'heading', content: '## ✨ Key Benefits' },
                 { id: 'w6', type: 'list', content: '- **Visual Editing**: See your changes in real-time with our side-by-side preview.\n- **Smart Components**: Pre-built elements for Badges, Mermaid diagrams, and KaTeX math.\n- **Tabbed Workspace**: Manage multiple documentation files (README, LICENSE, CHANGELOG) in one place.\n- **One-Click Export**: Copy to clipboard or download as a `.zip` instantly.' }
               ] 
@@ -1402,12 +1403,44 @@
       function setupActions() {
         document.getElementById('btn-copy').onclick = () => {
           const activeTab = tabs.find(t => t.id === activeTabId);
-          // (Reuse generateMarkdown logic)
           const markdown = generateMarkdown(activeTab.components);
           navigator.clipboard.writeText(markdown);
           showNotification('Copied to clipboard!');
         };
-        // ... download logic ...
+
+        document.getElementById('btn-download').onclick = async () => {
+          if (typeof JSZip === 'undefined') {
+            showNotification('Download library not loaded yet. Please wait.');
+            return;
+          }
+          if (tabs.length === 0) {
+            showNotification('No tabs to download!');
+            return;
+          }
+
+          try {
+            const zip = new JSZip();
+            tabs.forEach(tab => {
+              const markdown = generateMarkdown(tab.components);
+              const fileName = tab.name.endsWith('.md') ? tab.name : `${tab.name}.md`;
+              zip.file(fileName, markdown);
+            });
+
+            const content = await zip.generateAsync({ type: 'blob' });
+            const url = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'zareadme-project.zip';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showNotification('Project downloaded as ZIP!');
+          } catch (error) {
+            console.error('Download failed:', error);
+            showNotification('Download failed!');
+          }
+        };
       }
 
       // Helper for generateMarkdown (needed for copy/download/preview)
